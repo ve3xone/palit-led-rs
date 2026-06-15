@@ -1,0 +1,22 @@
+[package]
+name = "palit-led"
+version = "0.1.0"
+edition = "2021"
+description = "Standalone Palit GPU LED control via NvAPI I2C (no ThPanel)"
+
+[[bin]]
+name = "palit-led"
+path = "src/main.rs"
+
+[dependencies]
+libloading = "0.8"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+ctrlc = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
