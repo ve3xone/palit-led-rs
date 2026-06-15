@@ -1,12 +1,9 @@
 //! palit-led: standalone Palit GPU LED control via NvAPI I2C.
 //! No ThPanel, no G-PANEL, no registry.
 
-mod config;
-mod led;
-mod nvapi;
-
-use config::Config;
-use nvapi::NvApi;
+use palit_led::config::{self, Config};
+use palit_led::led;
+use palit_led::nvapi::NvApi;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;

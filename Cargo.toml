@@ -4,15 +4,33 @@ version = "0.1.0"
 edition = "2021"
 description = "Standalone Palit GPU LED control via NvAPI I2C (no ThPanel)"
 
+[lib]
+name = "palit_led"
+path = "src/lib.rs"
+
 [[bin]]
 name = "palit-led"
 path = "src/main.rs"
+
+[[bin]]
+name = "palit-led-tray"
+path = "src/bin/tray.rs"
 
 [dependencies]
 libloading = "0.8"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 ctrlc = "3"
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.59"
+features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Shell",
+    "Win32_System_LibraryLoader",
+    "Win32_Graphics_Gdi",
+]
 
 [profile.release]
 opt-level = 3
