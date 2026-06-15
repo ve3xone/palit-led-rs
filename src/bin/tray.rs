@@ -10,11 +10,13 @@ use palit_led::nvapi::NvApi;
 use std::mem::size_of;
 use std::ptr::null_mut;
 
-use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
+use windows_sys::Win32::Foundation::{
+    GetLastError, ERROR_ALREADY_EXISTS, HWND, LPARAM, LRESULT, POINT, WPARAM,
+};
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
+use windows_sys::Win32::System::Threading::CreateMutexW;
 use windows_sys::Win32::UI::Shell::{
-    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY,
-    NOTIFYICONDATAW,
+    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu, DestroyWindow,
@@ -48,7 +50,6 @@ fn set_tip(nid: &mut NOTIFYICONDATAW, text: &str) {
 }
 
 unsafe fn update(state: &mut State) {
-    let mut tips: Vec<String> = Vec::with_capacity(state.gpus.len());
     let t = &state.cfg;
     for (i, &g) in state.gpus.iter().enumerate() {
         let temp = state.nv.gpu_temp(g).unwrap_or(0);
@@ -57,11 +58,7 @@ unsafe fn update(state: &mut State) {
             let _ = led::set_color(&state.nv, g, c.0, c.1, c.2, 100);
             state.last[i] = c;
         }
-        tips.push(format!("GPU{g} {temp}C"));
     }
-    set_tip(&mut state.nid, &format!("palit-led  {}", tips.join("  ")));
-    state.nid.uFlags = NIF_TIP;
-    Shell_NotifyIconW(NIM_MODIFY, &state.nid);
 }
 
 unsafe fn show_menu(hwnd: HWND) {
@@ -126,6 +123,14 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
 }
 
 fn main() {
+    // single instance: bail if another tray already holds the named mutex
+    unsafe {
+        CreateMutexW(null_mut(), 1, wide("palit-led-tray-singleton").as_ptr());
+        if GetLastError() == ERROR_ALREADY_EXISTS {
+            return;
+        }
+    }
+
     let cfg = config::load();
     let nv = match NvApi::new() {
         Ok(n) => n,
